@@ -1,0 +1,14 @@
+/Debug/
+/x64/
+/OPCDALib/Debug/
+/OPCDALib/x64/
+/.vs/
+*.pdb
+*.dll
+*.exe
+*.exp
+*.xml
+*.user
+*.filters
+*.opendb
+*.db
