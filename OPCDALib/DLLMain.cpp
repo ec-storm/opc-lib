@@ -52,7 +52,7 @@ JNI_FUNCTION(connect, void)(JNIEnv *env, jobject jobj, jstring host, jstring pro
 	if (g_client == NULL)
 		return;
 
-	g_client->Connect((char*)env->GetStringUTFChars(host, 0), (char*)env->GetStringUTFChars(progId, 0));
+	g_client->Connect((char*)env->GetStringUTFChars(progId, 0), (char*)env->GetStringUTFChars(host, 0));
 }
 
 JNI_FUNCTION(getOpcServers, jobjectArray)(JNIEnv *env, jobject jobj, jstring host) {
