@@ -182,12 +182,12 @@ JNI_FUNCTION(writeTag, void)(JNIEnv *env, jobject jobj, jint tagHandle, jobject 
 	else if (strcmp(currentType, "java.lang.Double") == 0) {
 		jmethodID mid = env->GetStaticMethodID(clazz, "objectToDouble", "(Ljava/lang/Object;)D");
 		V_VT(&currentValue) = VT_R4;
-		V_R4(&currentValue) = (double)env->CallStaticDoubleMethod(clazz, mid, value);
+		V_R4(&currentValue) = (float)env->CallStaticDoubleMethod(clazz, mid, value);
 	}
 	else if (strcmp(currentType, "java.lang.Boolean") == 0) {
 		jmethodID mid = env->GetStaticMethodID(clazz, "objectToBoolean", "(Ljava/lang/Object;)Z");
 		V_VT(&currentValue) = VT_BOOL;
-		V_BOOL(&currentValue) = (bool)env->CallStaticBooleanMethod(clazz, mid, value);
+		V_BOOL(&currentValue) = env->CallStaticBooleanMethod(clazz, mid, value);
 	}
 
 	GetSystemTime(&st);
