@@ -157,13 +157,11 @@
     <ClCompile Include="DLLMain.cpp" />
     <ClCompile Include="OPCClient.cpp" />
     <ClCompile Include="OPCDataCallback.cpp" />
-    <ClCompile Include="OPCLib.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DLLMain.h" />
     <ClInclude Include="OPCClient.h" />
     <ClInclude Include="OPCDataCallback.h" />
-    <ClInclude Include="OPCLib.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

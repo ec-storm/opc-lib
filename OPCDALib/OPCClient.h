@@ -72,6 +72,8 @@ public:
 
 	LPCTSTR GetTagByClientId(DWORD clientId);
 
-	std::vector<std::string> GetAllTags();
+	std::vector<std::string> GetServerTags();
+
+	std::vector<std::string> GetOPCServers(char* host);
 };
 
