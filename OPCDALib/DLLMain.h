@@ -18,6 +18,8 @@ extern "C" {
 	JNI_FUNCTION(removeTag, void)(JNIEnv *env, jobject jobj, jint tagHandle);
 	JNI_FUNCTION(getOpcServers, jobjectArray)(JNIEnv *env, jobject jobj, jstring host);
 	JNI_FUNCTION(getOpcServerTags, jobjectArray)(JNIEnv *env, jobject jobj);
+	JNI_FUNCTION(readTag, jobject)(JNIEnv *env, jobject jobj, jint tagHandle);
+	JNI_FUNCTION(writeTag, void)(JNIEnv *env, jobject jobj, jint tagHandle, jobject value, jstring type);
 
 #ifdef __cplusplus
 }
