@@ -5,7 +5,7 @@
 #include <windows.h>
 #include "OPCClient.h"
 
-#define JNI_FUNCTION(name, ret) JNIEXPORT ret JNICALL Java_com_minhdtb_storm_core_lib_opcda_OPCDAManager_##name
+#define JNI_FUNCTION(name, return) JNIEXPORT return JNICALL Java_com_minhdtb_storm_core_lib_opcda_OPCDAManager_##name
 
 #ifdef __cplusplus
 extern "C" {
@@ -14,6 +14,8 @@ extern "C" {
 	JNI_FUNCTION(initialize, void)(JNIEnv *env, jobject jobj);
 	JNI_FUNCTION(uninitialize, void)(JNIEnv *env, jobject jobj);
 	JNI_FUNCTION(connect, void)(JNIEnv *env, jobject jobj, jstring host, jstring progId);
+	JNI_FUNCTION(addTag, jint)(JNIEnv *env, jobject jobj, jstring tagName);
+	JNI_FUNCTION(removeTag, void)(JNIEnv *env, jobject jobj, jint tagHandle);
 	JNI_FUNCTION(getOpcServers, jobjectArray)(JNIEnv *env, jobject jobj, jstring host);
 	JNI_FUNCTION(getOpcServerTags, jobjectArray)(JNIEnv *env, jobject jobj);
 
