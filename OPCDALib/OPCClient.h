@@ -6,7 +6,16 @@
 #include <comcat.h>
 #include <atlconv.h>
 #include <atlbase.h>
-#include "OPCDataCallback.h"
+#include <functional>
+#include <string>
+#include <vector>
+
+typedef struct TagNameStruct
+{
+	OPCHANDLE tagHandle;
+	DWORD clientId;
+	LPCTSTR name;
+} TAGNAME;
 
 class OPCClient
 {
@@ -23,15 +32,17 @@ private:
 
 	CComPtr<IConnectionPoint> m_ConnectionPoint;
 
-	CComPtr<IOPCItemMgt> m_itemMgt;
+	CComPtr<IOPCItemMgt> m_ItemMgt;
 
 	OPCHANDLE m_GroupHandle;
 
 	DWORD m_UpdateRate;
 
-	DWORD m_Cookie;
+	DWORD m_Cookie;	
 
-	OPCDataCallback* m_OPCDataCallback;
+	std::function<void(LPCTSTR, VARIANT, FILETIME, WORD)> m_OnChange;	
+
+	std::vector<TAGNAME> m_TagList;
 
 public:
 
@@ -43,7 +54,7 @@ public:
 
 	virtual void Disconnect();
 
-	bool isConnected();
+	bool IsConnected();
 
 	OPCHANDLE AddTag(LPCTSTR tagName, VARTYPE type);
 
@@ -55,5 +66,12 @@ public:
 
 	bool WriteValue(OPCHANDLE tagHandle, FILETIME &time, VARIANT &value, WORD quatily);
 
+	void OnChange(std::function<void(LPCTSTR, VARIANT, FILETIME, WORD)>&& callback);
+
+	void InvokeOnChange(DWORD clientId, FILETIME time, VARIANT value, WORD quatily);
+
+	LPCTSTR GetTagByClientId(DWORD clientId);
+
+	std::vector<std::string> GetAllTags();
 };
 

@@ -1,12 +1,13 @@
 #pragma once
 
 #include <opcda.h>
+#include "OPCClient.h"
 
 class OPCDataCallback : public IOPCDataCallback
 {
 public:		
 
-	OPCDataCallback();
+	OPCDataCallback(OPCClient *client);
 
 	STDMETHODIMP QueryInterface(REFIID iid, LPVOID* ppInterface);
 
@@ -56,4 +57,6 @@ public:
 private:
 
 	ULONG m_ulRefs;
+
+	OPCClient *m_client;
 };

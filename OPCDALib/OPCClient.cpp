@@ -1,5 +1,10 @@
 #include "OPCClient.h"
+#include "OPCDataCallback.h"
+
 #include <sstream>
+#include <algorithm>
+
+OPCDataCallback* g_OPCDataCallback;
 
 OPCClient::OPCClient()
 {
@@ -14,7 +19,7 @@ HRESULT OPCClient::Connect(LPCTSTR name, LPCTSTR host)
 {
 	HRESULT hr = S_OK;
 
-	if (isConnected()) {
+	if (IsConnected()) {
 		return E_FAIL;
 	}
 
@@ -79,7 +84,7 @@ HRESULT OPCClient::Connect(LPCTSTR name, LPCTSTR host)
 		return E_FAIL;
 	}
 
-	if (m_Group == NULL) {		
+	if (m_Group == NULL) {
 		DWORD updateRate = 0;
 
 		hr = m_Server->AddGroup(L"", TRUE, m_UpdateRate, NULL, NULL, NULL, GetSystemDefaultLCID(),
@@ -99,12 +104,12 @@ HRESULT OPCClient::Connect(LPCTSTR name, LPCTSTR host)
 			return E_FAIL;
 		}
 
-		m_OPCDataCallback = new OPCDataCallback;				
+		g_OPCDataCallback = new OPCDataCallback(this);
 
-		hr = m_ConnectionPoint->Advise(m_OPCDataCallback, &m_Cookie);
+		hr = m_ConnectionPoint->Advise(g_OPCDataCallback, &m_Cookie);
 		if (FAILED(hr))
 		{
-			delete m_OPCDataCallback;
+			delete g_OPCDataCallback;
 			return E_FAIL;
 		}
 	}
@@ -114,7 +119,7 @@ HRESULT OPCClient::Connect(LPCTSTR name, LPCTSTR host)
 
 void OPCClient::Disconnect()
 {
-	if (!isConnected()) {
+	if (!IsConnected()) {
 		return;
 	}
 
@@ -128,12 +133,12 @@ void OPCClient::Disconnect()
 		m_ConnectionPoint.p = NULL;
 	}
 
-	if (m_OPCDataCallback) {
+	if (g_OPCDataCallback) {
 		try {
-			m_OPCDataCallback->Release();
+			g_OPCDataCallback->Release();
 		}
 		catch (...) {}
-		m_OPCDataCallback = NULL;
+		g_OPCDataCallback = NULL;
 	}
 
 	if (m_Group) {
@@ -154,40 +159,50 @@ void OPCClient::Disconnect()
 	}
 }
 
-bool OPCClient::isConnected()
+bool OPCClient::IsConnected()
 {
 	return (m_Server != NULL && m_Group != NULL);;
 }
 
 OPCHANDLE OPCClient::AddTag(LPCTSTR tagName, VARTYPE type)
 {
+	USES_CONVERSION;
+
 	HRESULT hr = S_OK;
 	OPCITEMRESULT * pResults = NULL;
 	HRESULT *pErrors = NULL;
 	OPCITEMDEF idef;
 
-	idef.szItemID = CT2OLE(tagName);
+	idef.szItemID = A2OLE(tagName);
 	idef.dwBlobSize = 0;
 	idef.pBlob = NULL;
 	idef.bActive = TRUE;
-	idef.hClient = 1;
-	idef.szAccessPath = NULL; 
-	idef.vtRequestedDataType = VT_EMPTY;
+	idef.hClient = m_TagList.size() + 1;
+	idef.szAccessPath = NULL;
+	idef.vtRequestedDataType = type;
 
-	if (m_itemMgt == NULL && m_Group == NULL) return E_FAIL;
+	if (m_ItemMgt == NULL && m_Group == NULL) return E_FAIL;
 
-	if (m_itemMgt == NULL) {
-		m_Group.QueryInterface(&m_itemMgt);
-		ATLASSERT(m_itemMgt);
+	if (m_ItemMgt == NULL) {
+		m_Group.QueryInterface(&m_ItemMgt);
+		ATLASSERT(m_ItemMgt);
 	}
 
-	hr = m_itemMgt->AddItems(1, &idef, &pResults, &pErrors);
-	
+	hr = m_ItemMgt->AddItems(1, &idef, &pResults, &pErrors);
+
 	if (pErrors)
 		CoTaskMemFree(pErrors);
 
-	if (pResults)
+	if (pResults) {
+		TAGNAME tagStruct;
+		tagStruct.name = tagName;
+		tagStruct.clientId = idef.hClient;
+		tagStruct.tagHandle = pResults->hServer;
+		m_TagList.push_back(tagStruct);
+
 		return pResults->hServer;
+	}
+
 
 	return 0;
 }
@@ -221,14 +236,150 @@ bool OPCClient::GetState(OPCSERVERSTATE & state)
 
 void OPCClient::RemoveTag(OPCHANDLE tagHandle)
 {
+	struct find_handle : std::unary_function<TAGNAME, bool> {
+		OPCHANDLE handle;
+
+		find_handle(OPCHANDLE handle) :handle(handle) { }
+		bool operator()(TAGNAME const& m) const {
+			return m.tagHandle == handle;
+		}
+	};
+
+	std::vector<TAGNAME>::iterator it = std::find_if(m_TagList.begin(), m_TagList.end(), find_handle(tagHandle));
+	if (it == m_TagList.end())
+		return;
+
+	m_TagList.erase(it);
+
+	HRESULT *hr;
+	m_ItemMgt->RemoveItems(1, &tagHandle, &hr);
 }
 
 bool OPCClient::ReadValue(OPCHANDLE tagHandle, FILETIME & time, VARIANT & value, WORD & quatily)
 {
+	CComPtr<IOPCSyncIO> SyncIO;
+	if (m_Group == NULL) return false;
+
+	m_Group.QueryInterface(&SyncIO);
+	if (SyncIO == NULL) return false;
+
+	HRESULT      *pErrors = NULL;
+	OPCITEMSTATE* pItemState = NULL;
+
+	HRESULT hr = SyncIO->Read(OPC_DS_CACHE, 1, &tagHandle, &pItemState, &pErrors);
+	if (FAILED(hr) || (pErrors != NULL && FAILED(*pErrors)) || pItemState == NULL) {
+		if (FAILED(*pErrors))
+			return false;
+
+		if (pErrors)
+			CoTaskMemFree(pErrors);
+
+		if (pItemState)
+			CoTaskMemFree(pItemState);
+
+		return false;
+	}
+
+	if (pErrors)
+		CoTaskMemFree(pErrors);
+
+	if (pItemState) {
+		hr = VariantCopy(&value, &pItemState->vDataValue);
+		if (FAILED(hr)) {
+			return false;
+		}
+
+		quatily = pItemState->wQuality;
+		time = pItemState->ftTimeStamp;
+		CoTaskMemFree(pItemState);
+
+		return true;
+	}
+
 	return false;
 }
 
 bool OPCClient::WriteValue(OPCHANDLE tagHandle, FILETIME & time, VARIANT & value, WORD quatily)
 {
-	return false;
+	CComPtr<IOPCAsyncIO2> AsyncIO;
+	if (m_Group == NULL) return false;
+
+	m_Group.QueryInterface(&AsyncIO);
+	if (AsyncIO == NULL) return false;
+
+	HRESULT	*pErrors = NULL;
+	DWORD cancelID = 0;
+
+	HRESULT hr = AsyncIO->Write(1, &tagHandle, &value, rand(), &cancelID, &pErrors);
+	if (FAILED(hr) || (pErrors != NULL && FAILED(*pErrors))) {
+		if (FAILED(*pErrors))
+			return false;
+
+		if (pErrors)
+			CoTaskMemFree(pErrors);
+
+		return false;
+	}
+
+	if (pErrors) {
+		CoTaskMemFree(pErrors);
+		return false;
+	}
+
+	return true;
+}
+
+void OPCClient::OnChange(std::function<void(LPCTSTR, VARIANT, FILETIME, WORD)>&& callback)
+{
+	m_OnChange = callback;
+}
+
+void OPCClient::InvokeOnChange(DWORD clientId, FILETIME time, VARIANT value, WORD quatily)
+{
+	m_OnChange(GetTagByClientId(clientId), value, time, quatily);
+}
+
+LPCTSTR OPCClient::GetTagByClientId(DWORD clientId)
+{
+	struct find_id : std::unary_function<TAGNAME, bool> {
+		DWORD id;
+
+		find_id(DWORD id) :id(id) { }
+		bool operator()(TAGNAME const& m) const {
+			return m.clientId == id;
+		}
+	};
+
+	std::vector<TAGNAME>::iterator it = std::find_if(m_TagList.begin(), m_TagList.end(), find_id(clientId));
+	if (it != m_TagList.end())
+		return it->name;
+
+	return NULL;
+}
+
+std::vector<std::string> OPCClient::GetAllTags()
+{
+	USES_CONVERSION;
+
+	std::vector<std::string> result;
+	CComPtr<IOPCBrowseServerAddressSpace> pOPCBrowser;
+	if (m_Server == NULL) 
+		return result;
+
+	m_Server.QueryInterface(&pOPCBrowser);
+	if (pOPCBrowser == NULL) 
+		return result;
+
+	CComPtr<IEnumString> pEnumString;
+	pOPCBrowser->BrowseOPCItemIDs(OPC_FLAT, L"",
+		VT_EMPTY, OPC_READABLE | OPC_WRITEABLE, (LPENUMSTRING*)&pEnumString);
+
+	pEnumString->Reset();
+	LPOLESTR str = NULL;
+	ULONG fetched = 0;
+	while (pEnumString->Next(1, &str, &fetched) == S_OK && fetched == 1) {
+		result.push_back(OLE2CA(str));
+	}
+
+	return result;
 }

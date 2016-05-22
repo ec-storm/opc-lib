@@ -1,9 +1,10 @@
 #include "OPCDataCallback.h"
 #include <stdio.h>
 
-OPCDataCallback::OPCDataCallback()
+OPCDataCallback::OPCDataCallback(OPCClient* client)
 {
 	m_ulRefs = 1;
+	m_client = client;
 }
 
 STDMETHODIMP OPCDataCallback::QueryInterface(REFIID iid, LPVOID* ppInterface)
@@ -61,7 +62,9 @@ STDMETHODIMP OPCDataCallback::OnDataChange(
 	HRESULT   * pErrors
 )
 {
-	printf("Data change\n");
+	for (DWORD i = 0; i < dwCount; i++)
+		m_client->InvokeOnChange(phClientItems[i], pftTimeStamps[i], pvValues[i], pwQualities[i]);
+
 	return S_OK;
 }
 
