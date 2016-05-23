@@ -2,8 +2,6 @@
 
 OPCClient* g_client;
 
-#define CLASS_NAME "com/minhdtb/storm/core/lib/opcda/OPCDAManager"
-
 JNI_FUNCTION(initialize, void)(JNIEnv *env, jobject jobj) {
 
 	g_client = new OPCClient();
@@ -109,10 +107,6 @@ JNI_FUNCTION(readTag, jobject)(JNIEnv *env, jobject jobj, jint tagHandle) {
 	if (g_client == NULL)
 		return NULL;
 
-	JavaVM* vm;
-	env->GetJavaVM(&vm);
-	vm->AttachCurrentThread((void**)&env, NULL);
-
 	FILETIME time;
 
 	VARIANT value;
@@ -163,7 +157,7 @@ JNI_FUNCTION(writeTag, void)(JNIEnv *env, jobject jobj, jint tagHandle, jobject 
 
 	if (strcmp(currentType, "java.lang.String") == 0) {		
 		jmethodID mid = env->GetStaticMethodID(clazz, "objectToString", "(Ljava/lang/Object;)Ljava/lang/String;");
-		jstring svalue = (jstring)env->CallObjectMethod(jobj, mid, value);
+		jstring svalue = (jstring)env->CallStaticObjectMethod(clazz, mid, value);
 		const jchar *cStr = env->GetStringChars(svalue, NULL);
 		const jsize numChars = env->GetStringLength(svalue);
 
