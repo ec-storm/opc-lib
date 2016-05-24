@@ -5,8 +5,8 @@
 #include <windows.h>
 #include "OPCClient.h"
 
-#define JNI_FUNCTION(name, return) JNIEXPORT return JNICALL Java_com_minhdtb_storm_core_lib_opcda_OPCDAManager_##name
-#define CLASS_NAME "com/minhdtb/storm/core/lib/opcda/OPCDAManager"
+#define JNI_FUNCTION(name, return) JNIEXPORT return JNICALL Java_com_minhdtb_storm_core_lib_opcda_OPCDaClient_##name
+#define CLASS_NAME "com/minhdtb/storm/core/lib/opcda/OPCDaClient"
 
 #ifdef __cplusplus
 extern "C" {
