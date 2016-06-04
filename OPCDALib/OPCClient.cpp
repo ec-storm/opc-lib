@@ -25,6 +25,9 @@ HRESULT OPCClient::Connect(LPCTSTR name, LPCTSTR host)
 		return E_FAIL;
 	}
 
+	if (name == NULL)
+		return E_FAIL;
+
 	if (host == NULL || std::string(host) == "")
 	{
 		m_Host = "localhost";
@@ -331,14 +334,15 @@ bool OPCClient::WriteValue(OPCHANDLE tagHandle, FILETIME & time, VARIANT & value
 	return true;
 }
 
-void OPCClient::OnChange(std::function<void(LPCTSTR, VARIANT, FILETIME, WORD)>&& callback)
+void OPCClient::OnChange(std::function<void(void* client, LPCTSTR, VARIANT, FILETIME, WORD)>&& callback)
 {
 	m_OnChange = callback;
 }
 
 void OPCClient::InvokeOnChange(DWORD clientId, FILETIME time, VARIANT value, WORD quatily)
 {
-	m_OnChange(GetTagByClientId(clientId), value, time, quatily);
+	if (m_OnChange != NULL)
+		m_OnChange(this, GetTagByClientId(clientId), value, time, quatily);
 }
 
 LPCTSTR OPCClient::GetTagByClientId(DWORD clientId)
@@ -412,17 +416,20 @@ std::vector<std::string> OPCClient::GetOPCServers(char* host)
 	MultiQI[1].hr = S_OK;
 
 	HRESULT hr = CoCreateInstanceEx(CLSID_OpcServerList, NULL, CLSCTX_LOCAL_SERVER | CLSCTX_REMOTE_SERVER, &ServerInfo, 1, MultiQI);
-
-	if (hr == S_OK)
-	{
-		m_spServerList = (IOPCServerList*)MultiQI[0].pItf;
+	if (FAILED(hr)) {
+		return result;
 	}
 
+	m_spServerList = (IOPCServerList*)MultiQI[0].pItf;
+	
 	CLSID catid[2];
 	catid[0] = CATID_OPCDAServer10;
 	catid[1] = CATID_OPCDAServer20;
 	IOPCEnumGUID *pEnumGUID;
 	hr = m_spServerList->EnumClassesOfCategories(2, catid, 0, NULL, (IEnumGUID**)&pEnumGUID);
+	if (FAILED(hr)) {
+		return result;
+	}
 
 	if (hr == S_OK)
 	{

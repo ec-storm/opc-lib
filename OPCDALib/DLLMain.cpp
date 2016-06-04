@@ -1,11 +1,10 @@
 #include "DLLMain.h"
 
-OPCClient* g_client;
 
-JNI_FUNCTION(initialize, void)(JNIEnv *env, jobject jobj) {
+JNI_FUNCTION(create, jlong)(JNIEnv *env, jobject jobj) {
 
-	g_client = new OPCClient();
-	g_client->OnChange([env](LPCTSTR tagName, VARIANT value, FILETIME time, DWORD quality) {
+	OPCClient* client = new OPCClient();
+	client->OnChange([env](void* client, LPCTSTR tagName, VARIANT value, FILETIME time, DWORD quality) {
 		USES_CONVERSION;
 
 		JavaVM* vm;
@@ -13,7 +12,7 @@ JNI_FUNCTION(initialize, void)(JNIEnv *env, jobject jobj) {
 		vm->AttachCurrentThread((void**)&env, NULL);
 
 		jclass clazz = env->FindClass(CLASS_NAME);
-		jmethodID mid = env->GetStaticMethodID(clazz, "onChangeCallback", "(Ljava/lang/String;IJI)V");
+		jmethodID mid = env->GetStaticMethodID(clazz, "onChangeCallback", "(JLjava/lang/String;Ljava/lang/Object;JI)V");
 		jstring name = env->NewStringUTF(tagName);
 
 		switch (value.vt)
@@ -21,45 +20,60 @@ JNI_FUNCTION(initialize, void)(JNIEnv *env, jobject jobj) {
 		case VT_I1:
 		case VT_I2:
 		case VT_I4:
-		case VT_I8:
-			env->CallVoidMethod(clazz, mid, name, value.intVal, time, quality);
+		case VT_I8: {
+			jclass clazz = env->FindClass("java/lang/Integer");
+			jmethodID constructor = env->GetMethodID(clazz, "<init>", "(I)V");
+			env->CallVoidMethod(clazz, mid, (jlong)client, name, env->NewObject(clazz, constructor, (jint)value.intVal), time, quality);
 			break;
-		case VT_BOOL:
-			env->CallVoidMethod(clazz, mid, name, value.boolVal, time, quality);
+		}
+		case VT_BOOL: {
+			jclass clazz = env->FindClass("java/lang/Boolean");
+			jmethodID constructor = env->GetMethodID(clazz, "<init>", "(I)V");			
+			env->CallVoidMethod(clazz, mid, (jlong)client, name, env->NewObject(clazz, constructor, value.boolVal), time, quality);
 			break;
+		}			
 		case VT_BSTR: {
 			jstring tempValue = env->NewStringUTF(OLE2A(value.bstrVal));
-			env->CallVoidMethod(clazz, mid, name, tempValue, time, quality);
+			env->CallVoidMethod(clazz, mid, (jlong)client, name, tempValue, time, quality);
 			break;
 		}
 		case VT_R4:
-		case VT_R8:
-			env->CallVoidMethod(clazz, mid, name, value.fltVal, time, quality);
+		case VT_R8: {
+			jclass clazz = env->FindClass("java/lang/Float");
+			jmethodID constructor = env->GetMethodID(clazz, "<init>", "(F)V");			
+			env->CallVoidMethod(clazz, mid, (jlong)client, name, env->NewObject(clazz, constructor, value.fltVal), time, quality);
 			break;
+		}			
 		default:
 			break;
 		}
 	});
+
+	return (jlong)client;
 }
 
-JNI_FUNCTION(uninitialize, void)(JNIEnv *env, jobject jobj) {
-	delete g_client;
+JNI_FUNCTION(destroy, void)(JNIEnv *env, jobject jobj, jlong client) {
+	delete (OPCClient*)client;
 }
 
-JNI_FUNCTION(connect, void)(JNIEnv *env, jobject jobj, jstring host, jstring progId) {
-	if (g_client == NULL)
+JNI_FUNCTION(connect, void)(JNIEnv *env, jobject jobj, jlong client, jstring host, jstring progId) {
+
+	OPCClient* m_client = (OPCClient*)client;
+	if (m_client == NULL)
 		return;
 
-	g_client->Connect((char*)env->GetStringUTFChars(progId, 0), (char*)env->GetStringUTFChars(host, 0));
+	m_client->Connect((char*)env->GetStringUTFChars(progId, 0), (char*)env->GetStringUTFChars(host, 0));
 }
 
-JNI_FUNCTION(getOpcServers, jobjectArray)(JNIEnv *env, jobject jobj, jstring host) {
-	if (g_client == NULL)
+JNI_FUNCTION(getOpcServers, jobjectArray)(JNIEnv *env, jobject jobj, jlong client, jstring host) {
+
+	OPCClient* m_client = (OPCClient*)client;
+	if (m_client == NULL)
 		return NULL;
 
 	const char * chost = env->GetStringUTFChars(host, NULL);
 
-	std::vector<std::string> stringList = g_client->GetOPCServers((char*)env->GetStringUTFChars(host, 0));
+	std::vector<std::string> stringList = m_client->GetOPCServers((char*)env->GetStringUTFChars(host, 0));
 
 	jobjectArray ret = (jobjectArray)env->NewObjectArray(stringList.size(),
 		env->FindClass("java/lang/String"), env->NewStringUTF(""));
@@ -71,11 +85,13 @@ JNI_FUNCTION(getOpcServers, jobjectArray)(JNIEnv *env, jobject jobj, jstring hos
 	return ret;
 }
 
-JNI_FUNCTION(getOpcServerTags, jobjectArray)(JNIEnv *env, jobject jobj) {
-	if (g_client == NULL)
+JNI_FUNCTION(getOpcServerTags, jobjectArray)(JNIEnv *env, jobject jobj, jlong client) {
+
+	OPCClient* m_client = (OPCClient*)client;
+	if (m_client == NULL)
 		return NULL;
 
-	std::vector<std::string> stringList = g_client->GetServerTags();
+	std::vector<std::string> stringList = m_client->GetServerTags();
 
 	jobjectArray ret = (jobjectArray)env->NewObjectArray(stringList.size(),
 		env->FindClass("java/lang/String"), env->NewStringUTF(""));
@@ -87,24 +103,29 @@ JNI_FUNCTION(getOpcServerTags, jobjectArray)(JNIEnv *env, jobject jobj) {
 	return ret;
 }
 
-JNI_FUNCTION(addTag, jint)(JNIEnv *env, jobject jobj, jstring tagName) {
-	if (g_client == NULL)
+JNI_FUNCTION(addTag, jint)(JNIEnv *env, jobject jobj, jlong client, jstring tagName) {
+
+	OPCClient* m_client = (OPCClient*)client;
+	if (m_client == NULL)
 		return NULL;
 
-	return g_client->AddTag((char*)env->GetStringUTFChars(tagName, 0), VT_EMPTY);
+	return m_client->AddTag((char*)env->GetStringUTFChars(tagName, 0), VT_EMPTY);
 };
 
-JNI_FUNCTION(removeTag, void)(JNIEnv *env, jobject jobj, jint tagHandle) {
-	if (g_client == NULL)
+JNI_FUNCTION(removeTag, void)(JNIEnv *env, jobject jobj, jlong client, jint tagHandle) {
+
+	OPCClient* m_client = (OPCClient*)client;
+	if (m_client == NULL)
 		return;
 
-	g_client->RemoveTag(tagHandle);
+	m_client->RemoveTag(tagHandle);
 }
 
-JNI_FUNCTION(readTag, jobject)(JNIEnv *env, jobject jobj, jint tagHandle) {
+JNI_FUNCTION(readTag, jobject)(JNIEnv *env, jobject jobj, jlong client, jint tagHandle) {
 	USES_CONVERSION;
 
-	if (g_client == NULL)
+	OPCClient* m_client = (OPCClient*)client;
+	if (m_client == NULL)
 		return NULL;
 
 	FILETIME time;
@@ -113,7 +134,7 @@ JNI_FUNCTION(readTag, jobject)(JNIEnv *env, jobject jobj, jint tagHandle) {
 	VariantInit(&value);
 
 	WORD quality;
-	g_client->ReadValue(tagHandle, time, value, quality);
+	m_client->ReadValue(tagHandle, time, value, quality);
 	switch (value.vt)
 	{
 	case VT_I1:
@@ -143,8 +164,13 @@ JNI_FUNCTION(readTag, jobject)(JNIEnv *env, jobject jobj, jint tagHandle) {
 	}
 }
 
-JNI_FUNCTION(writeTag, void)(JNIEnv *env, jobject jobj, jint tagHandle, jobject value, jstring type) {
-	if (g_client == NULL)
+JNI_FUNCTION(writeTag, void)(JNIEnv *env, jobject jobj, jlong client, jint tagHandle, jobject value, jstring type) {
+
+	OPCClient* m_client = (OPCClient*)client;
+	if (m_client == NULL)
+		return;
+
+	if (m_client == NULL)
 		return;
 
 	FILETIME ft;
@@ -155,7 +181,7 @@ JNI_FUNCTION(writeTag, void)(JNIEnv *env, jobject jobj, jint tagHandle, jobject 
 	char* currentType = (char*)env->GetStringUTFChars(type, 0);
 	jclass clazz = env->FindClass(CLASS_NAME);
 
-	if (strcmp(currentType, "java.lang.String") == 0) {		
+	if (strcmp(currentType, "java.lang.String") == 0) {
 		jmethodID mid = env->GetStaticMethodID(clazz, "objectToString", "(Ljava/lang/Object;)Ljava/lang/String;");
 		jstring svalue = (jstring)env->CallStaticObjectMethod(clazz, mid, value);
 		const jchar *cStr = env->GetStringChars(svalue, NULL);
@@ -171,7 +197,7 @@ JNI_FUNCTION(writeTag, void)(JNIEnv *env, jobject jobj, jint tagHandle, jobject 
 		jmethodID mid = env->GetStaticMethodID(clazz, "objectToInt", "(Ljava/lang/Object;)I");
 		V_VT(&currentValue) = VT_I4;
 		V_I4(&currentValue) = (int)env->CallStaticIntMethod(clazz, mid, value);
-		
+
 	}
 	else if (strcmp(currentType, "java.lang.Double") == 0) {
 		jmethodID mid = env->GetStaticMethodID(clazz, "objectToDouble", "(Ljava/lang/Object;)D");
@@ -187,7 +213,7 @@ JNI_FUNCTION(writeTag, void)(JNIEnv *env, jobject jobj, jint tagHandle, jobject 
 	GetSystemTime(&st);
 	SystemTimeToFileTime(&st, &ft);
 
-	g_client->WriteValue(tagHandle, ft, currentValue, 100);
+	m_client->WriteValue(tagHandle, ft, currentValue, 100);
 }
 
 BOOL APIENTRY DllMain(HMODULE hModule,

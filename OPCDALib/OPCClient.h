@@ -40,7 +40,7 @@ private:
 
 	DWORD m_Cookie;	
 
-	std::function<void(LPCTSTR, VARIANT, FILETIME, WORD)> m_OnChange;	
+	std::function<void(void* client, LPCTSTR, VARIANT, FILETIME, WORD)> m_OnChange;
 
 	std::vector<TAGNAME> m_TagList;
 
@@ -66,7 +66,7 @@ public:
 
 	bool WriteValue(OPCHANDLE tagHandle, FILETIME &time, VARIANT &value, WORD quatily);
 
-	void OnChange(std::function<void(LPCTSTR, VARIANT, FILETIME, WORD)>&& callback);
+	void OnChange(std::function<void(void* client, LPCTSTR, VARIANT, FILETIME, WORD)>&& callback);
 
 	void InvokeOnChange(DWORD clientId, FILETIME time, VARIANT value, WORD quatily);
 

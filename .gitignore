@@ -1,6 +1,8 @@
 /Debug/
+/Release/
 /x64/
 /OPCDALib/Debug/
+/OPCDALib/Release/
 /OPCDALib/x64/
 /.vs/
 *.pdb
