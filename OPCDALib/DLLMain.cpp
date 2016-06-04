@@ -65,6 +65,14 @@ JNI_FUNCTION(connect, void)(JNIEnv *env, jobject jobj, jlong client, jstring hos
 	m_client->Connect((char*)env->GetStringUTFChars(progId, 0), (char*)env->GetStringUTFChars(host, 0));
 }
 
+JNI_FUNCTION(disconnect, void)(JNIEnv *env, jobject jobj, jlong client) {
+	OPCClient* m_client = (OPCClient*)client;
+	if (m_client == NULL)
+		return;
+
+	m_client->Disconnect();
+}
+
 JNI_FUNCTION(getOpcServers, jobjectArray)(JNIEnv *env, jobject jobj, jlong client, jstring host) {
 
 	OPCClient* m_client = (OPCClient*)client;

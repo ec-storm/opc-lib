@@ -15,6 +15,7 @@ extern "C" {
 	JNI_FUNCTION(create, jlong)(JNIEnv *env, jobject jobj);
 	JNI_FUNCTION(destroy, void)(JNIEnv *env, jobject jobj, jlong client);
 	JNI_FUNCTION(connect, void)(JNIEnv *env, jobject jobj, jlong client, jstring host, jstring progId);
+	JNI_FUNCTION(disconnect, void)(JNIEnv *env, jobject jobj, jlong client);
 	JNI_FUNCTION(addTag, jint)(JNIEnv *env, jobject jobj, jlong client, jstring tagName);
 	JNI_FUNCTION(removeTag, void)(JNIEnv *env, jobject jobj, jlong client, jint tagHandle);
 	JNI_FUNCTION(getOpcServers, jobjectArray)(JNIEnv *env, jobject jobj, jlong client, jstring host);
