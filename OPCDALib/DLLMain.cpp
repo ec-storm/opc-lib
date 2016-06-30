@@ -4,6 +4,7 @@ JavaVM* gJvm = nullptr;
 
 JNIEnv* getEnv() {
 	JNIEnv *env;
+
 	int status = gJvm->GetEnv((void**)&env, JNI_VERSION_1_8);
 	if (status < 0) {
 		status = gJvm->AttachCurrentThread((void**)&env, NULL);
@@ -11,6 +12,7 @@ JNIEnv* getEnv() {
 			return nullptr;
 		}
 	}
+
 	return env;
 }
 
@@ -19,23 +21,18 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *pjvm, void *reserved) {
 	return JNI_VERSION_1_8;
 }
 
-JNI_FUNCTION(create, jlong)(JNIEnv *envx, jobject jobj) {
+JNI_FUNCTION(create, jlong)(JNIEnv *env, jobject jobj) {
 
 	OPCClient* client = new OPCClient();
-	client->OnChange([envx](void* client, LPCTSTR tagName, VARIANT value, FILETIME time, DWORD quality) {
+	
+	JNIEnv* javaEnv = getEnv();		
+	jclass classOPC = javaEnv->FindClass(CLASS_NAME);
+	jmethodID callbackMethodID = javaEnv->GetStaticMethodID(classOPC, "onChangeCallback", "(JLjava/lang/String;Ljava/lang/Object;JI)V");
+
+	client->OnChange([javaEnv, classOPC, callbackMethodID](void* client, LPCTSTR tagName, VARIANT value, FILETIME time, DWORD quality) {
 		USES_CONVERSION;
-
-		auto env = getEnv();
-
-		jclass clazz = env->FindClass(CLASS_NAME);
-		if (clazz == NULL)
-			return;	
-					
-		jmethodID mid = env->GetStaticMethodID(clazz, "onChangeCallback", "(JLjava/lang/String;Ljava/lang/Object;JI)V");
-		if (mid == NULL)
-			return;
-			
-		jstring name = env->NewStringUTF(tagName);
+								
+		jstring name = javaEnv->NewStringUTF(tagName);
 
 		switch (value.vt)
 		{
@@ -43,27 +40,27 @@ JNI_FUNCTION(create, jlong)(JNIEnv *envx, jobject jobj) {
 		case VT_I2:
 		case VT_I4:
 		case VT_I8: {
-			jclass clazz = env->FindClass("java/lang/Integer");
-			jmethodID constructor = env->GetMethodID(clazz, "<init>", "(I)V");
-			env->CallVoidMethod(clazz, mid, (jlong)client, name, env->NewObject(clazz, constructor, (jint)value.intVal), time, quality);
+			jclass clazz = javaEnv->FindClass("java/lang/Integer");
+			jmethodID constructor = javaEnv->GetMethodID(clazz, "<init>", "(I)V");
+			javaEnv->CallVoidMethod(classOPC, callbackMethodID, (jlong)client, name, javaEnv->NewObject(clazz, constructor, (jint)value.intVal), time, quality);
 			break;
 		}
 		case VT_BOOL: {
-			jclass clazz = env->FindClass("java/lang/Boolean");
-			jmethodID constructor = env->GetMethodID(clazz, "<init>", "(I)V");			
-			env->CallVoidMethod(clazz, mid, (jlong)client, name, env->NewObject(clazz, constructor, value.boolVal), time, quality);
+			jclass clazz = javaEnv->FindClass("java/lang/Boolean");
+			jmethodID constructor = javaEnv->GetMethodID(clazz, "<init>", "(I)V");			
+			javaEnv->CallVoidMethod(classOPC, callbackMethodID, (jlong)client, name, javaEnv->NewObject(clazz, constructor, value.boolVal), time, quality);
 			break;
 		}			
 		case VT_BSTR: {
-			jstring tempValue = env->NewStringUTF(OLE2A(value.bstrVal));
-			env->CallVoidMethod(clazz, mid, (jlong)client, name, tempValue, time, quality);
+			jstring tempValue = javaEnv->NewStringUTF(OLE2A(value.bstrVal));
+			javaEnv->CallVoidMethod(classOPC, callbackMethodID, (jlong)client, name, tempValue, time, quality);
 			break;
 		}
 		case VT_R4:
 		case VT_R8: {
-			jclass clazz = env->FindClass("java/lang/Float");
-			jmethodID constructor = env->GetMethodID(clazz, "<init>", "(F)V");			
-			env->CallVoidMethod(clazz, mid, (jlong)client, name, env->NewObject(clazz, constructor, value.fltVal), time, quality);
+			jclass clazz = javaEnv->FindClass("java/lang/Float");
+			jmethodID constructor = javaEnv->GetMethodID(clazz, "<init>", "(F)V");			
+			javaEnv->CallVoidMethod(classOPC, callbackMethodID, (jlong)client, name, javaEnv->NewObject(clazz, constructor, value.fltVal), time, quality);
 			break;
 		}			
 		default:
