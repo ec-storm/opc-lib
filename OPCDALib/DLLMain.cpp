@@ -1,18 +1,40 @@
 #include "DLLMain.h"
 
+JavaVM* gJvm = nullptr;
 
-JNI_FUNCTION(create, jlong)(JNIEnv *env, jobject jobj) {
+JNIEnv* getEnv() {
+	JNIEnv *env;
+	int status = gJvm->GetEnv((void**)&env, JNI_VERSION_1_8);
+	if (status < 0) {
+		status = gJvm->AttachCurrentThread((void**)&env, NULL);
+		if (status < 0) {
+			return nullptr;
+		}
+	}
+	return env;
+}
+
+JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *pjvm, void *reserved) {
+	gJvm = pjvm;
+	return JNI_VERSION_1_8;
+}
+
+JNI_FUNCTION(create, jlong)(JNIEnv *envx, jobject jobj) {
 
 	OPCClient* client = new OPCClient();
-	client->OnChange([env](void* client, LPCTSTR tagName, VARIANT value, FILETIME time, DWORD quality) {
+	client->OnChange([envx](void* client, LPCTSTR tagName, VARIANT value, FILETIME time, DWORD quality) {
 		USES_CONVERSION;
 
-		JavaVM* vm;
-		env->GetJavaVM(&vm);
-		vm->AttachCurrentThread((void**)&env, NULL);
+		auto env = getEnv();
 
 		jclass clazz = env->FindClass(CLASS_NAME);
+		if (clazz == NULL)
+			return;	
+					
 		jmethodID mid = env->GetStaticMethodID(clazz, "onChangeCallback", "(JLjava/lang/String;Ljava/lang/Object;JI)V");
+		if (mid == NULL)
+			return;
+			
 		jstring name = env->NewStringUTF(tagName);
 
 		switch (value.vt)
@@ -46,14 +68,17 @@ JNI_FUNCTION(create, jlong)(JNIEnv *env, jobject jobj) {
 		}			
 		default:
 			break;
-		}
+		}		
 	});
 
 	return (jlong)client;
 }
 
 JNI_FUNCTION(destroy, void)(JNIEnv *env, jobject jobj, jlong client) {
-	delete (OPCClient*)client;
+	OPCClient* m_client = (OPCClient*)client;
+	m_client->OnChange(NULL);
+
+	delete m_client;
 }
 
 JNI_FUNCTION(connect, void)(JNIEnv *env, jobject jobj, jlong client, jstring host, jstring progId) {
