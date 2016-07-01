@@ -5,6 +5,8 @@
 #include <algorithm>
 #include <opccomn.h>
 #include <opcda_i.c>
+#include <locale>
+#include <codecvt>
 
 OPCDataCallback* g_OPCDataCallback;
 
@@ -363,17 +365,23 @@ LPCTSTR OPCClient::GetTagByClientId(DWORD clientId)
 	return NULL;
 }
 
+std::string wstring_to_utf8(const std::wstring& str)
+{
+	std::wstring_convert<std::codecvt_utf8<wchar_t>> myconv;
+	return myconv.to_bytes(str);
+}
+
 std::vector<std::string> OPCClient::GetServerTags()
 {
 	USES_CONVERSION;
 
 	std::vector<std::string> result;
 	CComPtr<IOPCBrowseServerAddressSpace> pOPCBrowser;
-	if (m_Server == NULL) 
+	if (m_Server == NULL)
 		return result;
 
 	m_Server.QueryInterface(&pOPCBrowser);
-	if (pOPCBrowser == NULL) 
+	if (pOPCBrowser == NULL)
 		return result;
 
 	CComPtr<IEnumString> pEnumString;
@@ -384,7 +392,7 @@ std::vector<std::string> OPCClient::GetServerTags()
 	LPOLESTR str = NULL;
 	ULONG fetched = 0;
 	while (pEnumString->Next(1, &str, &fetched) == S_OK && fetched == 1) {
-		result.push_back(OLE2CA(str));
+		result.push_back(wstring_to_utf8(str));
 	}
 
 	return result;
@@ -421,7 +429,7 @@ std::vector<std::string> OPCClient::GetOPCServers(char* host)
 	}
 
 	m_spServerList = (IOPCServerList*)MultiQI[0].pItf;
-	
+
 	CLSID catid[2];
 	catid[0] = CATID_OPCDAServer10;
 	catid[1] = CATID_OPCDAServer20;
