@@ -44,6 +44,8 @@ private:
 
 	std::vector<TAGNAME> m_TagList;
 
+	CComPtr<IOPCBrowseServerAddressSpace> m_pOPCBrowser;
+
 public:
 
 	OPCClient();
@@ -73,6 +75,10 @@ public:
 	LPCTSTR GetTagByClientId(DWORD clientId);
 
 	std::vector<std::string> GetServerTags();
+
+	std::vector<std::string> GetServerTagBranches(LPCTSTR sInput);
+
+	std::vector<std::string> GetServerTagLeafs(LPCTSTR sInput);
 
 	std::vector<std::string> GetOPCServers(char* host);
 };

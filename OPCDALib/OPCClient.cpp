@@ -121,6 +121,10 @@ HRESULT OPCClient::Connect(LPCTSTR name, LPCTSTR host)
 		}
 	}
 
+	m_Server.QueryInterface(&m_pOPCBrowser);
+	if (m_pOPCBrowser == NULL)
+		return E_FAIL;
+
 	return hr;
 }
 
@@ -376,23 +380,93 @@ std::vector<std::string> OPCClient::GetServerTags()
 	USES_CONVERSION;
 
 	std::vector<std::string> result;
-	CComPtr<IOPCBrowseServerAddressSpace> pOPCBrowser;
-	if (m_Server == NULL)
-		return result;
 
-	m_Server.QueryInterface(&pOPCBrowser);
-	if (pOPCBrowser == NULL)
+	if (m_pOPCBrowser == NULL)
 		return result;
 
 	CComPtr<IEnumString> pEnumString;
-	pOPCBrowser->BrowseOPCItemIDs(OPC_FLAT, L"",
+	m_pOPCBrowser->BrowseOPCItemIDs(OPC_FLAT, L"",
 		VT_EMPTY, OPC_READABLE | OPC_WRITEABLE, (LPENUMSTRING*)&pEnumString);
 
 	pEnumString->Reset();
 	LPOLESTR str = NULL;
 	ULONG fetched = 0;
 	while (pEnumString->Next(1, &str, &fetched) == S_OK && fetched == 1) {
-		result.push_back(wstring_to_utf8(str));
+		LPOLESTR ItemId = NULL;
+		m_pOPCBrowser->GetItemID(str, &ItemId);
+		if (ItemId != NULL) {
+			result.push_back(wstring_to_utf8(ItemId));
+		}		
+	}
+
+	return result;
+}
+
+std::vector<std::string> OPCClient::GetServerTagBranches(LPCTSTR sInput)
+{
+	USES_CONVERSION;
+
+	std::vector<std::string> result;
+	CComPtr<IEnumString> pEnum;
+
+	if (m_pOPCBrowser == NULL)
+		return result;
+
+	HRESULT ret = m_pOPCBrowser->BrowseOPCItemIDs(OPC_BRANCH, L"\0", VT_EMPTY, 0, (LPENUMSTRING*)&pEnum);
+	do {
+		ret = m_pOPCBrowser->ChangeBrowsePosition(OPC_BROWSE_UP, L"\0");
+	} while (SUCCEEDED(ret));
+
+	m_pOPCBrowser->ChangeBrowsePosition(OPC_BROWSE_TO, CA2W(sInput));
+	
+	CComPtr<IEnumString> pEnumString;
+	m_pOPCBrowser->BrowseOPCItemIDs(OPC_BRANCH, L"\0",
+		VT_EMPTY, OPC_READABLE | OPC_WRITEABLE, (LPENUMSTRING*)&pEnumString);
+
+	pEnumString->Reset();
+	LPOLESTR str = NULL;
+	ULONG fetched = 0;
+	while (pEnumString->Next(1, &str, &fetched) == S_OK && fetched == 1) {
+		LPOLESTR ItemId = NULL;
+		m_pOPCBrowser->GetItemID(str, &ItemId);
+		if (ItemId != NULL) {
+			result.push_back(wstring_to_utf8(ItemId));
+		}
+	}
+
+	return result;
+}
+
+std::vector<std::string> OPCClient::GetServerTagLeafs(LPCTSTR sInput)
+{
+	USES_CONVERSION;
+
+	std::vector<std::string> result;
+	CComPtr<IEnumString> pEnum;
+
+	if (m_pOPCBrowser == NULL)
+		return result;
+
+	HRESULT ret = m_pOPCBrowser->BrowseOPCItemIDs(OPC_BRANCH, L"\0", VT_EMPTY, 0, (LPENUMSTRING*)&pEnum);
+	do {
+		ret = m_pOPCBrowser->ChangeBrowsePosition(OPC_BROWSE_UP, L"\0");
+	} while (SUCCEEDED(ret));
+
+	m_pOPCBrowser->ChangeBrowsePosition(OPC_BROWSE_TO, CA2W(sInput));
+
+	CComPtr<IEnumString> pEnumString;
+	m_pOPCBrowser->BrowseOPCItemIDs(OPC_LEAF, L"\0",
+		VT_EMPTY, OPC_READABLE | OPC_WRITEABLE, (LPENUMSTRING*)&pEnumString);
+
+	pEnumString->Reset();
+	LPOLESTR str = NULL;
+	ULONG fetched = 0;
+	while (pEnumString->Next(1, &str, &fetched) == S_OK && fetched == 1) {
+		LPOLESTR ItemId = NULL;
+		m_pOPCBrowser->GetItemID(str, &ItemId);
+		if (ItemId != NULL) {
+			result.push_back(wstring_to_utf8(ItemId));
+		}
 	}
 
 	return result;
@@ -449,7 +523,7 @@ std::vector<std::string> OPCClient::GetOPCServers(char* host)
 			LPOLESTR wszProgID;
 			hr = ProgIDFromCLSID(serverGUID, &wszProgID);
 			result.push_back(OLE2CA(wszProgID));
-			CoTaskMemFree(wszProgID);
+			CoTaskMemFree(wszProgID); 
 		};
 	}
 

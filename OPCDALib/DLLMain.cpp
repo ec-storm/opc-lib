@@ -133,6 +133,40 @@ JNI_FUNCTION(getOpcServerTags, jobjectArray)(JNIEnv *env, jobject jobj, jlong cl
 	return ret;
 }
 
+JNI_FUNCTION(getOpcServerTagBranches, jobjectArray)(JNIEnv *env, jobject jobj, jlong client, jstring input) {
+	OPCClient* m_client = (OPCClient*)client;
+	if (m_client == NULL)
+		return NULL;
+
+	std::vector<std::string> stringList = m_client->GetServerTagBranches((char*)env->GetStringUTFChars(input, 0));
+
+	jobjectArray ret = (jobjectArray)env->NewObjectArray(stringList.size(),
+		env->FindClass("java/lang/String"), env->NewStringUTF(""));
+
+	for (unsigned int i = 0; i < stringList.size(); i++) {
+		env->SetObjectArrayElement(ret, i, env->NewStringUTF(stringList.at(i).c_str()));
+	}
+
+	return ret;
+}
+
+JNI_FUNCTION(getOpcServerTagLeafs, jobjectArray)(JNIEnv *env, jobject jobj, jlong client, jstring input) {
+	OPCClient* m_client = (OPCClient*)client;
+	if (m_client == NULL)
+		return NULL;
+
+	std::vector<std::string> stringList = m_client->GetServerTagLeafs((char*)env->GetStringUTFChars(input, 0));
+
+	jobjectArray ret = (jobjectArray)env->NewObjectArray(stringList.size(),
+		env->FindClass("java/lang/String"), env->NewStringUTF(""));
+
+	for (unsigned int i = 0; i < stringList.size(); i++) {
+		env->SetObjectArrayElement(ret, i, env->NewStringUTF(stringList.at(i).c_str()));
+	}
+
+	return ret;
+}
+
 JNI_FUNCTION(addTag, jint)(JNIEnv *env, jobject jobj, jlong client, jstring tagName) {
 
 	OPCClient* m_client = (OPCClient*)client;
