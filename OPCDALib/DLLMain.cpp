@@ -113,8 +113,6 @@ JNI_FUNCTION(getOpcServers, jobjectArray)(JNIEnv* env, jobject jobj, jlong clien
 	if (m_client == nullptr)
 		return nullptr;
 
-	const char* chost = env->GetStringUTFChars(host, nullptr);
-
 	std::vector<std::string> stringList = m_client->GetOPCServers(const_cast<char*>(env->GetStringUTFChars(host, nullptr)));
 
 	jobjectArray ret = static_cast<jobjectArray>(env->NewObjectArray(stringList.size(),
