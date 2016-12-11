@@ -73,10 +73,8 @@ HRESULT OPCClient::Connect(LPCTSTR name, LPCTSTR host)
 		{
 			return E_FAIL;
 		}
-		else
-		{
-			m_Server.p = static_cast<IOPCServer*>(mqi[0].pItf);
-		}
+
+		m_Server.p = static_cast<IOPCServer*>(mqi[0].pItf);
 	}
 
 	OPCSERVERSTATE state = OPC_STATUS_TEST;
@@ -206,7 +204,7 @@ bool OPCClient::IsConnected() const
 OPCHANDLE OPCClient::AddTag(LPCTSTR tagName, VARTYPE type)
 {
 	USES_CONVERSION;
-	
+
 	OPCITEMRESULT* pResults = nullptr;
 	HRESULT* pErrors = nullptr;
 	OPCITEMDEF idef;
@@ -407,7 +405,7 @@ LPCTSTR OPCClient::GetTagByClientId(DWORD clientId)
 		}
 	};
 
-	std::vector<TAGNAME>::iterator it = std::find_if(m_TagList.begin(), m_TagList.end(), find_id(clientId));
+	std::vector<TAGNAME>::iterator it = find_if(m_TagList.begin(), m_TagList.end(), find_id(clientId));
 	if (it != m_TagList.end())
 		return it->name;
 
