@@ -135,7 +135,7 @@
       <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
       <AdditionalDependencies>Rpcrt4.lib;atls.lib;%(AdditionalDependencies);OpcUtils.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories>..\depends\x86\Bin\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>

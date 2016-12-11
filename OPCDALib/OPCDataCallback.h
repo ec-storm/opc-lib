@@ -5,7 +5,10 @@
 
 class OPCDataCallback : public IOPCDataCallback
 {
-public:		
+public:
+	virtual ~OPCDataCallback()
+	{
+	}
 
 	OPCDataCallback(OPCClient *client);
 

@@ -1,5 +1,4 @@
 #include "OPCDataCallback.h"
-#include <stdio.h>
 
 OPCDataCallback::OPCDataCallback(OPCClient* client)
 {
@@ -9,7 +8,7 @@ OPCDataCallback::OPCDataCallback(OPCClient* client)
 
 STDMETHODIMP OPCDataCallback::QueryInterface(REFIID iid, LPVOID* ppInterface)
 {
-	if (ppInterface == NULL)
+	if (ppInterface == nullptr)
 	{
 		return E_INVALIDARG;
 	}
@@ -33,12 +32,12 @@ STDMETHODIMP OPCDataCallback::QueryInterface(REFIID iid, LPVOID* ppInterface)
 
 STDMETHODIMP_(ULONG) OPCDataCallback::AddRef()
 {
-	return InterlockedIncrement((LONG*)&m_ulRefs);
+	return InterlockedIncrement(reinterpret_cast<LONG*>(&m_ulRefs));
 }
 
 STDMETHODIMP_(ULONG) OPCDataCallback::Release()
 {
-	ULONG ulRefs = InterlockedDecrement((LONG*)&m_ulRefs);
+	ULONG ulRefs = InterlockedDecrement(reinterpret_cast<LONG*>(&m_ulRefs));
 
 	if (ulRefs == 0)
 	{

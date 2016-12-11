@@ -1,13 +1,9 @@
 #pragma once
 #include <Windows.h>
 #include <opcda.h>
-#include <objbase.h>
 #include <olectl.h>
-#include <comcat.h>
-#include <atlconv.h>
 #include <atlbase.h>
 #include <functional>
-#include <string>
 #include <vector>
 
 typedef struct TagNameStruct
@@ -50,23 +46,23 @@ public:
 
 	OPCClient();
 
-	~OPCClient();
+	virtual ~OPCClient();
 
 	virtual HRESULT Connect(LPCTSTR name, LPCTSTR host = NULL);
 
 	virtual void Disconnect();
 
-	bool IsConnected();
+	bool IsConnected() const;
 
 	OPCHANDLE AddTag(LPCTSTR tagName, VARTYPE type);
 
-	bool GetState(OPCSERVERSTATE &state);
+	bool GetState(OPCSERVERSTATE &state) const;
 
 	void RemoveTag(OPCHANDLE tagHandle);
 
-	bool ReadValue(OPCHANDLE tagHandle, FILETIME &time, VARIANT &value, WORD &quatily);
+	bool ReadValue(OPCHANDLE tagHandle, FILETIME &time, VARIANT &value, WORD &quatily) const;
 
-	bool WriteValue(OPCHANDLE tagHandle, FILETIME &time, VARIANT &value, WORD quatily);
+	bool WriteValue(OPCHANDLE tagHandle, FILETIME &time, VARIANT &value, WORD quatily) const;
 
 	void OnChange(std::function<void(void* client, LPCTSTR, VARIANT, FILETIME, WORD)>&& callback);
 
@@ -74,12 +70,12 @@ public:
 
 	LPCTSTR GetTagByClientId(DWORD clientId);
 
-	std::vector<std::string> GetServerTags();
+	std::vector<std::string> GetServerTags() const;
 
-	std::vector<std::string> GetServerTagBranches(LPCTSTR sInput);
+	std::vector<std::string> GetServerTagBranches(LPCTSTR sInput) const;
 
-	std::vector<std::string> GetServerTagLeafs(LPCTSTR sInput);
+	std::vector<std::string> GetServerTagLeafs(LPCTSTR sInput) const;
 
-	std::vector<std::string> GetOPCServers(char* host);
+	std::vector<std::string> GetOPCServers(char* host) const;
 };
 
