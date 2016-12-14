@@ -68,9 +68,9 @@ JNI_FUNCTION(create, jlong)(JNIEnv* env, jobject jobj)
 			case VT_R4:
 			case VT_R8:
 				{
-					jclass clazz = javaEnv->FindClass("java/lang/Float");
-					jmethodID constructor = javaEnv->GetMethodID(clazz, "<init>", "(F)V");
-					javaEnv->CallVoidMethod(classOPC, callbackMethodID, reinterpret_cast<jlong>(client), name, javaEnv->NewObject(clazz, constructor, value.fltVal), time, quality);
+					jclass clazz = javaEnv->FindClass("java/lang/Double");
+					jmethodID constructor = javaEnv->GetMethodID(clazz, "<init>", "(D)V");
+					javaEnv->CallVoidMethod(classOPC, callbackMethodID, reinterpret_cast<jlong>(client), name, javaEnv->NewObject(clazz, constructor, value.dblVal), time, quality);
 					break;
 				}
 			default:
@@ -183,13 +183,33 @@ JNI_FUNCTION(getOpcServerTagLeafs, jobjectArray)(JNIEnv* env, jobject jobj, jlon
 	return ret;
 }
 
-JNI_FUNCTION(addTag, jint)(JNIEnv* env, jobject jobj, jlong client, jstring tagName)
+JNI_FUNCTION(addTag, jint)(JNIEnv* env, jobject jobj, jlong client, jstring tagName, jint tagType)
 {
 	OPCClient* m_client = reinterpret_cast<OPCClient*>(client);
 	if (m_client == nullptr)
 		return 0;
 
-	return m_client->AddTag(const_cast<char*>(env->GetStringUTFChars(tagName, nullptr)), VT_EMPTY);
+	VARTYPE type = VT_EMPTY;
+
+	/*	switch (tagType)
+		{
+		case 0:
+			type = VT_I4;
+			break;
+		case 1:
+			type = VT_R8;
+			break;
+		case 2:
+			type = VT_BOOL;
+			break;
+		case 3:
+			type = VT_BSTR;
+			break;
+		default: break;
+		}
+		*/
+
+	return m_client->AddTag(const_cast<char*>(env->GetStringUTFChars(tagName, nullptr)), type);
 };
 
 JNI_FUNCTION(removeTag, void)(JNIEnv* env, jobject jobj, jlong client, jint tagHandle)
@@ -269,6 +289,7 @@ JNI_FUNCTION(writeTag, void)(JNIEnv* env, jobject jobj, jlong client, jint tagHa
 	if (strcmp(currentType, "java.lang.String") == 0)
 	{
 		jmethodID mid = env->GetStaticMethodID(clazz, "objectToString", "(Ljava/lang/Object;)Ljava/lang/String;");
+		if (mid == nullptr) return;
 		jstring svalue = static_cast<jstring>(env->CallStaticObjectMethod(clazz, mid, value));
 		const jchar* cStr = env->GetStringChars(svalue, nullptr);
 		const jsize numChars = env->GetStringLength(svalue);
@@ -282,18 +303,21 @@ JNI_FUNCTION(writeTag, void)(JNIEnv* env, jobject jobj, jlong client, jint tagHa
 	else if (strcmp(currentType, "java.lang.Integer") == 0)
 	{
 		jmethodID mid = env->GetStaticMethodID(clazz, "objectToInt", "(Ljava/lang/Object;)I");
+		if (mid == nullptr) return;
 		V_VT(&currentValue) = VT_I4;
 		V_I4(&currentValue) = static_cast<int>(env->CallStaticIntMethod(clazz, mid, value));
 	}
 	else if (strcmp(currentType, "java.lang.Double") == 0)
 	{
 		jmethodID mid = env->GetStaticMethodID(clazz, "objectToDouble", "(Ljava/lang/Object;)D");
+		if (mid == nullptr) return;
 		V_VT(&currentValue) = VT_R4;
 		V_R4(&currentValue) = static_cast<float>(env->CallStaticDoubleMethod(clazz, mid, value));
 	}
 	else if (strcmp(currentType, "java.lang.Boolean") == 0)
 	{
 		jmethodID mid = env->GetStaticMethodID(clazz, "objectToBoolean", "(Ljava/lang/Object;)Z");
+		if (mid == nullptr) return;
 		V_VT(&currentValue) = VT_BOOL;
 		V_BOOL(&currentValue) = env->CallStaticBooleanMethod(clazz, mid, value);
 	}

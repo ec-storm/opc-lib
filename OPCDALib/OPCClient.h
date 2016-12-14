@@ -15,9 +15,6 @@ typedef struct TagNameStruct
 
 class OPCClient
 {
-
-private:
-
 	LPCTSTR m_ProgID;
 
 	LPCTSTR m_Host;
@@ -48,7 +45,7 @@ public:
 
 	virtual ~OPCClient();
 
-	virtual HRESULT Connect(LPCTSTR name, LPCTSTR host = NULL);
+	virtual HRESULT Connect(LPCTSTR name, LPCTSTR host = nullptr);
 
 	virtual void Disconnect();
 
