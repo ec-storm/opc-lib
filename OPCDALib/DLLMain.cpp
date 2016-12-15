@@ -183,33 +183,13 @@ JNI_FUNCTION(getOpcServerTagLeafs, jobjectArray)(JNIEnv* env, jobject jobj, jlon
 	return ret;
 }
 
-JNI_FUNCTION(addTag, jint)(JNIEnv* env, jobject jobj, jlong client, jstring tagName, jint tagType)
+JNI_FUNCTION(addTag, jint)(JNIEnv* env, jobject jobj, jlong client, jstring tagName)
 {
 	OPCClient* m_client = reinterpret_cast<OPCClient*>(client);
 	if (m_client == nullptr)
 		return 0;
 
-	VARTYPE type = VT_EMPTY;
-
-	/*	switch (tagType)
-		{
-		case 0:
-			type = VT_I4;
-			break;
-		case 1:
-			type = VT_R8;
-			break;
-		case 2:
-			type = VT_BOOL;
-			break;
-		case 3:
-			type = VT_BSTR;
-			break;
-		default: break;
-		}
-		*/
-
-	return m_client->AddTag(const_cast<char*>(env->GetStringUTFChars(tagName, nullptr)), type);
+	return m_client->AddTag(const_cast<char*>(env->GetStringUTFChars(tagName, nullptr)), VT_EMPTY);
 };
 
 JNI_FUNCTION(removeTag, void)(JNIEnv* env, jobject jobj, jlong client, jint tagHandle)
