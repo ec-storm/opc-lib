@@ -291,8 +291,8 @@ JNI_FUNCTION(writeTag, void)(JNIEnv* env, jobject jobj, jlong client, jint tagHa
 	{
 		jmethodID mid = env->GetStaticMethodID(clazz, "objectToDouble", "(Ljava/lang/Object;)D");
 		if (mid == nullptr) return;
-		V_VT(&currentValue) = VT_R4;
-		V_R4(&currentValue) = static_cast<float>(env->CallStaticDoubleMethod(clazz, mid, value));
+		V_VT(&currentValue) = VT_R8;
+		V_R8(&currentValue) = static_cast<float>(env->CallStaticDoubleMethod(clazz, mid, value));
 	}
 	else if (strcmp(currentType, "java.lang.Boolean") == 0)
 	{
