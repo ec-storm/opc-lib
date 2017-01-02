@@ -9,7 +9,7 @@
 
 OPCDataCallback* g_OPCDataCallback;
 
-OPCClient::OPCClient(): m_ProgID(nullptr), m_Host(nullptr), m_GroupHandle(0), m_UpdateRate(0), m_Cookie(0)
+OPCClient::OPCClient() : m_ProgID(nullptr), m_Host(nullptr), m_GroupHandle(0), m_UpdateRate(0), m_Cookie(0)
 {
 }
 
@@ -64,7 +64,7 @@ HRESULT OPCClient::Connect(LPCTSTR name, LPCTSTR host)
 		sinfo.pAuthInfo = nullptr;
 		sinfo.pwszName = _wcsdup(CT2W(m_Host));
 
-		MULTI_QI mqi[] = {{&IID_IOPCServer, nullptr ,S_OK}};
+		MULTI_QI mqi[] = { {&IID_IOPCServer, nullptr ,S_OK} };
 
 		hr = CoCreateInstanceEx(clsid, nullptr, CLSCTX_REMOTE_SERVER, &sinfo, sizeof(mqi) / sizeof(mqi[0]), mqi);
 		free(sinfo.pwszName);
@@ -101,7 +101,7 @@ HRESULT OPCClient::Connect(LPCTSTR name, LPCTSTR host)
 		DWORD updateRate = 0;
 
 		hr = m_Server->AddGroup(L"", TRUE, m_UpdateRate, 0, nullptr, nullptr, GetSystemDefaultLCID(),
-		                        &m_GroupHandle, &updateRate, IID_IOPCGroupStateMgt, reinterpret_cast<LPUNKNOWN *>(&m_Group));
+			&m_GroupHandle, &updateRate, IID_IOPCGroupStateMgt, reinterpret_cast<LPUNKNOWN *>(&m_Group));
 		if (FAILED(hr) || m_Group == nullptr)
 		{
 			return E_FAIL;
@@ -429,7 +429,7 @@ std::vector<std::string> OPCClient::GetServerTags() const
 
 	CComPtr<IEnumString> pEnumString;
 	m_pOPCBrowser->BrowseOPCItemIDs(OPC_FLAT, L"",
-	                                VT_EMPTY, OPC_READABLE | OPC_WRITEABLE, static_cast<LPENUMSTRING*>(&pEnumString));
+		VT_EMPTY, OPC_READABLE | OPC_WRITEABLE, static_cast<LPENUMSTRING*>(&pEnumString));
 
 	pEnumString->Reset();
 	LPOLESTR str = nullptr;
@@ -461,14 +461,13 @@ std::vector<std::string> OPCClient::GetServerTagBranches(LPCTSTR sInput) const
 	do
 	{
 		ret = m_pOPCBrowser->ChangeBrowsePosition(OPC_BROWSE_UP, L"\0");
-	}
-	while (SUCCEEDED(ret));
+	} while (SUCCEEDED(ret));
 
 	m_pOPCBrowser->ChangeBrowsePosition(OPC_BROWSE_TO, CA2W(sInput));
 
 	CComPtr<IEnumString> pEnumString;
 	m_pOPCBrowser->BrowseOPCItemIDs(OPC_BRANCH, L"\0",
-	                                VT_EMPTY, OPC_READABLE | OPC_WRITEABLE, static_cast<LPENUMSTRING*>(&pEnumString));
+		VT_EMPTY, OPC_READABLE | OPC_WRITEABLE, static_cast<LPENUMSTRING*>(&pEnumString));
 
 	pEnumString->Reset();
 	LPOLESTR str = nullptr;
@@ -500,14 +499,13 @@ std::vector<std::string> OPCClient::GetServerTagLeafs(LPCTSTR sInput) const
 	do
 	{
 		ret = m_pOPCBrowser->ChangeBrowsePosition(OPC_BROWSE_UP, L"\0");
-	}
-	while (SUCCEEDED(ret));
+	} while (SUCCEEDED(ret));
 
 	m_pOPCBrowser->ChangeBrowsePosition(OPC_BROWSE_TO, CA2W(sInput));
 
 	CComPtr<IEnumString> pEnumString;
 	m_pOPCBrowser->BrowseOPCItemIDs(OPC_LEAF, L"\0",
-	                                VT_EMPTY, OPC_READABLE | OPC_WRITEABLE, static_cast<LPENUMSTRING*>(&pEnumString));
+		VT_EMPTY, OPC_READABLE | OPC_WRITEABLE, static_cast<LPENUMSTRING*>(&pEnumString));
 
 	pEnumString->Reset();
 	LPOLESTR str = nullptr;
@@ -531,16 +529,16 @@ std::vector<std::string> OPCClient::GetOPCServers(char* host) const
 
 	std::vector<std::string> result;
 
-	const CLSID CLSID_OpcServerList = {0x13486D51,0x4821,0x11D2,{0xA4,0x94,0x3C, 0xB3,0x06,0xC1,0x0,0x0}};
+	const CLSID CLSID_OpcServerList = { 0x13486D51,0x4821,0x11D2,{0xA4,0x94,0x3C, 0xB3,0x06,0xC1,0x0,0x0} };
 
 	IOPCServerList* m_spServerList;
 
-	COSERVERINFO ServerInfo = {0};
+	COSERVERINFO ServerInfo = { 0 };
 
 	ServerInfo.pwszName = A2OLE(host);
 	ServerInfo.pAuthInfo = nullptr;
 
-	MULTI_QI MultiQI[2] = {nullptr};
+	MULTI_QI MultiQI[2] = { nullptr };
 
 	MultiQI[0].pIID = &IID_IOPCServerList;
 	MultiQI[0].pItf = nullptr;

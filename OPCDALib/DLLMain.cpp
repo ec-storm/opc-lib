@@ -35,48 +35,48 @@ JNI_FUNCTION(create, jlong)(JNIEnv* env, jobject jobj)
 	jmethodID callbackMethodID = javaEnv->GetStaticMethodID(classOPC, "onChangeCallback", "(JLjava/lang/String;Ljava/lang/Object;JI)V");
 
 	client->OnChange([javaEnv, classOPC, callbackMethodID](void* client, LPCTSTR tagName, VARIANT value, FILETIME time, DWORD quality)
+	{
+		USES_CONVERSION;
+
+		jstring name = javaEnv->NewStringUTF(tagName);
+
+		switch (value.vt)
 		{
-			USES_CONVERSION;
-
-			jstring name = javaEnv->NewStringUTF(tagName);
-
-			switch (value.vt)
-			{
-			case VT_I1:
-			case VT_I2:
-			case VT_I4:
-			case VT_I8:
-				{
-					jclass clazz = javaEnv->FindClass("java/lang/Integer");
-					jmethodID constructor = javaEnv->GetMethodID(clazz, "<init>", "(I)V");
-					javaEnv->CallVoidMethod(classOPC, callbackMethodID, reinterpret_cast<jlong>(client), name, javaEnv->NewObject(clazz, constructor, static_cast<jint>(value.intVal)), time, quality);
-					break;
-				}
-			case VT_BOOL:
-				{
-					jclass clazz = javaEnv->FindClass("java/lang/Boolean");
-					jmethodID constructor = javaEnv->GetMethodID(clazz, "<init>", "(I)V");
-					javaEnv->CallVoidMethod(classOPC, callbackMethodID, reinterpret_cast<jlong>(client), name, javaEnv->NewObject(clazz, constructor, value.boolVal), time, quality);
-					break;
-				}
-			case VT_BSTR:
-				{
-					jstring tempValue = javaEnv->NewStringUTF(OLE2A(value.bstrVal));
-					javaEnv->CallVoidMethod(classOPC, callbackMethodID, reinterpret_cast<jlong>(client), name, tempValue, time, quality);
-					break;
-				}
-			case VT_R4:
-			case VT_R8:
-				{
-					jclass clazz = javaEnv->FindClass("java/lang/Double");
-					jmethodID constructor = javaEnv->GetMethodID(clazz, "<init>", "(D)V");
-					javaEnv->CallVoidMethod(classOPC, callbackMethodID, reinterpret_cast<jlong>(client), name, javaEnv->NewObject(clazz, constructor, value.dblVal), time, quality);
-					break;
-				}
-			default:
-				break;
-			}
-		});
+		case VT_I1:
+		case VT_I2:
+		case VT_I4:
+		case VT_I8:
+		{
+			jclass clazz = javaEnv->FindClass("java/lang/Integer");
+			jmethodID constructor = javaEnv->GetMethodID(clazz, "<init>", "(I)V");
+			javaEnv->CallVoidMethod(classOPC, callbackMethodID, reinterpret_cast<jlong>(client), name, javaEnv->NewObject(clazz, constructor, static_cast<jint>(value.intVal)), time, quality);
+			break;
+		}
+		case VT_BOOL:
+		{
+			jclass clazz = javaEnv->FindClass("java/lang/Boolean");
+			jmethodID constructor = javaEnv->GetMethodID(clazz, "<init>", "(I)V");
+			javaEnv->CallVoidMethod(classOPC, callbackMethodID, reinterpret_cast<jlong>(client), name, javaEnv->NewObject(clazz, constructor, value.boolVal), time, quality);
+			break;
+		}
+		case VT_BSTR:
+		{
+			jstring tempValue = javaEnv->NewStringUTF(OLE2A(value.bstrVal));
+			javaEnv->CallVoidMethod(classOPC, callbackMethodID, reinterpret_cast<jlong>(client), name, tempValue, time, quality);
+			break;
+		}
+		case VT_R4:
+		case VT_R8:
+		{
+			jclass clazz = javaEnv->FindClass("java/lang/Double");
+			jmethodID constructor = javaEnv->GetMethodID(clazz, "<init>", "(D)V");
+			javaEnv->CallVoidMethod(classOPC, callbackMethodID, reinterpret_cast<jlong>(client), name, javaEnv->NewObject(clazz, constructor, value.dblVal), time, quality);
+			break;
+		}
+		default:
+			break;
+		}
+	});
 
 	return reinterpret_cast<jlong>(client);
 }
@@ -116,7 +116,7 @@ JNI_FUNCTION(getOpcServers, jobjectArray)(JNIEnv* env, jobject jobj, jlong clien
 	std::vector<std::string> stringList = m_client->GetOPCServers(const_cast<char*>(env->GetStringUTFChars(host, nullptr)));
 
 	jobjectArray ret = static_cast<jobjectArray>(env->NewObjectArray(stringList.size(),
-	                                                                 env->FindClass("java/lang/String"), env->NewStringUTF("")));
+		env->FindClass("java/lang/String"), env->NewStringUTF("")));
 
 	for (unsigned int i = 0; i < stringList.size(); i++)
 	{
@@ -135,7 +135,7 @@ JNI_FUNCTION(getOpcServerTags, jobjectArray)(JNIEnv* env, jobject jobj, jlong cl
 	std::vector<std::string> stringList = m_client->GetServerTags();
 
 	jobjectArray ret = static_cast<jobjectArray>(env->NewObjectArray(stringList.size(),
-	                                                                 env->FindClass("java/lang/String"), env->NewStringUTF("")));
+		env->FindClass("java/lang/String"), env->NewStringUTF("")));
 
 	for (unsigned int i = 0; i < stringList.size(); i++)
 	{
@@ -154,7 +154,7 @@ JNI_FUNCTION(getOpcServerTagBranches, jobjectArray)(JNIEnv* env, jobject jobj, j
 	std::vector<std::string> stringList = m_client->GetServerTagBranches(const_cast<char*>(env->GetStringUTFChars(input, nullptr)));
 
 	jobjectArray ret = static_cast<jobjectArray>(env->NewObjectArray(stringList.size(),
-	                                                                 env->FindClass("java/lang/String"), env->NewStringUTF("")));
+		env->FindClass("java/lang/String"), env->NewStringUTF("")));
 
 	for (unsigned int i = 0; i < stringList.size(); i++)
 	{
@@ -173,7 +173,7 @@ JNI_FUNCTION(getOpcServerTagLeafs, jobjectArray)(JNIEnv* env, jobject jobj, jlon
 	std::vector<std::string> stringList = m_client->GetServerTagLeafs(const_cast<char*>(env->GetStringUTFChars(input, nullptr)));
 
 	jobjectArray ret = static_cast<jobjectArray>(env->NewObjectArray(stringList.size(),
-	                                                                 env->FindClass("java/lang/String"), env->NewStringUTF("")));
+		env->FindClass("java/lang/String"), env->NewStringUTF("")));
 
 	for (unsigned int i = 0; i < stringList.size(); i++)
 	{
@@ -222,28 +222,28 @@ JNI_FUNCTION(readTag, jobject)(JNIEnv* env, jobject jobj, jlong client, jint tag
 	case VT_I2:
 	case VT_I4:
 	case VT_I8:
-		{
-			jclass clazz = env->FindClass("java/lang/Integer");
-			jmethodID constructor = env->GetMethodID(clazz, "<init>", "(I)V");
-			return env->NewObject(clazz, constructor, static_cast<jint>(value.intVal));
-		}
+	{
+		jclass clazz = env->FindClass("java/lang/Integer");
+		jmethodID constructor = env->GetMethodID(clazz, "<init>", "(I)V");
+		return env->NewObject(clazz, constructor, static_cast<jint>(value.intVal));
+	}
 	case VT_BOOL:
-		{
-			jclass clazz = env->FindClass("java/lang/Boolean");
-			jmethodID constructor = env->GetMethodID(clazz, "<init>", "(I)V");
-			return env->NewObject(clazz, constructor, value.boolVal);
-		}
+	{
+		jclass clazz = env->FindClass("java/lang/Boolean");
+		jmethodID constructor = env->GetMethodID(clazz, "<init>", "(I)V");
+		return env->NewObject(clazz, constructor, value.boolVal);
+	}
 	case VT_BSTR:
-		{
-			return env->NewString(reinterpret_cast<jchar*>(value.bstrVal), SysStringLen(value.bstrVal));
-		}
+	{
+		return env->NewString(reinterpret_cast<jchar*>(value.bstrVal), SysStringLen(value.bstrVal));
+	}
 	case VT_R4:
 	case VT_R8:
-		{
-			jclass clazz = env->FindClass("java/lang/Float");
-			jmethodID constructor = env->GetMethodID(clazz, "<init>", "(F)V");
-			return env->NewObject(clazz, constructor, value.fltVal);
-		}
+	{
+		jclass clazz = env->FindClass("java/lang/Float");
+		jmethodID constructor = env->GetMethodID(clazz, "<init>", "(F)V");
+		return env->NewObject(clazz, constructor, value.fltVal);
+	}
 	default:
 		return nullptr;
 	}
@@ -309,20 +309,19 @@ JNI_FUNCTION(writeTag, void)(JNIEnv* env, jobject jobj, jlong client, jint tagHa
 }
 
 BOOL APIENTRY DllMain(HMODULE hModule,
-                      DWORD ul_reason_for_call,
-                      LPVOID lpReserved
+	DWORD ul_reason_for_call,
+	LPVOID lpReserved
 )
 {
 	switch (ul_reason_for_call)
 	{
 	case DLL_PROCESS_ATTACH:
-		{
-			CoInitializeEx(nullptr, COINIT_MULTITHREADED);
-			break;
-		}
+		CoInitializeEx(nullptr, COINIT_MULTITHREADED);
+		break;
 	case DLL_THREAD_ATTACH:
 	case DLL_THREAD_DETACH:
 	case DLL_PROCESS_DETACH:
+		CoUninitialize();
 		break;
 	default: break;
 	}

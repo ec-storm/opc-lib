@@ -22,7 +22,7 @@
     <ProjectGuid>{D1A007E0-0B69-41B9-8097-81D2281D14D7}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>OPCDALib</RootNamespace>
-    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.14393.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
